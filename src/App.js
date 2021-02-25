@@ -17,13 +17,27 @@ class App extends Component{
   }
   
   onUsernameSelection(username) {
+    socket.auth = { username };
+    socket.connect();
     this.setState({
       'usernameAlreadySelected' : true,
     }, () => {
       console.log(this.state);
-      socket.auth = { username };
-      socket.connect();
     })
+  }
+
+  componentDidMount() {
+    socket.on('connect_error', (err) => {
+      if(err.message === 'invalid username') {
+        this.setState({
+          'usernameAlreadySelected' : false
+        })
+      }
+    })
+  }
+
+  componentWillUnmount() {
+    socket.off("connect_error");
   }
 
   render() {
@@ -37,7 +51,9 @@ class App extends Component{
               <div className="inbox_msg">
                 <div className="inbox_people">
                   <Heading />
-                  <ChatList />
+                  <div className="inbox_chat">
+                    <ChatList />
+                  </div>
                 </div>
                 <MessArea />
               </div>
