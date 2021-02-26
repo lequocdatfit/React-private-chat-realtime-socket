@@ -6,17 +6,12 @@ class ChatItem extends Component {
     super(props);
   }
 
-  onItemClick() {
-    this.setState({
-      'isClicked' : true
-    });
-  }
 
   render() {
-    const { user } = this.props;
+    const { user, fn } = this.props;
     return (
-      <div className="ChatItem" onClick={() => this.onItemClick() }>
-        <div className={classnames('chat_list', { 'active_chat': user.isClicked })}>
+      <div className="ChatItem" onClick={ fn(user) }>
+        <div className={classnames('chat_list', { ' active_chat': user.isClicked })}>
           <div className="chat_people">
             <div className="chat_img">
               <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil" />

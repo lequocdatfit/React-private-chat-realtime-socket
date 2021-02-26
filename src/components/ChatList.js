@@ -8,6 +8,8 @@ import ChatItem from './ChatItem'
 class ChatList extends Component {
   constructor(props) {
     super(props);
+
+    this.onChatItemClicked = this.onChatItemClicked.bind(this);
     this.state = {
       'users': [],
     }
@@ -44,9 +46,7 @@ class ChatList extends Component {
           ...this.state.users,
           user,
         ]
-      }, () => {
-        console.log(this.state);
-      })
+      });
     })
 
   }
@@ -55,6 +55,31 @@ class ChatList extends Component {
     user.connected = true;
     user.messages = [];
     user.hasNewMessages = false;
+    user.isClicked = false;
+  }
+
+  onChatItemClicked(user) {
+    const { users } = this.state;
+
+
+    var index = users.indexOf(user);
+    return (event) => {
+      
+      users.forEach((user) => {
+        user.isClicked = false;
+      });
+
+      this.setState({
+        'users' :[
+            ...users.slice(0, index),
+          {
+            ...user,
+            isClicked: true,
+          },
+          ...users.slice(index + 1)
+        ]
+      });
+    }
   }
 
 
@@ -63,7 +88,11 @@ class ChatList extends Component {
     return (
       <div className="ChatList">
         {
-          users && users.map((user, index) => <ChatItem key={index} user={user}/>)
+          users && users.map((user, index) => 
+            <ChatItem 
+              key={index} 
+              user={user} 
+              fn={this.onChatItemClicked}/>)
         }
       </div>
     )
