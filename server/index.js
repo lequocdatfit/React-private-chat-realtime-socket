@@ -30,6 +30,13 @@ io.on('connection', (socket) => {
     }
     socket.emit('users', users);
 
+    socket.on('private message', ({content, to}) => {
+        socket.to(to).emit('private message', {
+            content,
+            from: socket.id,
+        })
+    })
+
     socket.on('disconnect', () => {
         console.log('user disconnected');
     });
