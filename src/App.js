@@ -11,7 +11,7 @@ class App extends Component{
     super();
     this.state = {
       'usernameAlreadySelected' : false,
-      'selectedUser' : {},
+      'selectedUser' : '',
       'users': [],
     }
 
@@ -34,11 +34,11 @@ class App extends Component{
         return a.username > b.username ? 1 : 0;
       });
 
+      const selectedUser = users[1] ? users[1].userID : null;
+
       this.setState({
         'users': users.slice(1),
-        'selectedUser': {
-          ...users[1]
-        }
+        'selectedUser': selectedUser,
       })
     });
 
@@ -56,22 +56,23 @@ class App extends Component{
     socket.on('private message', ({content, from}) => {
       let { users, selectedUser } = this.state;
       for(let i=0; i< users.length; i++) {
-        const user = users[i];
-        if(user.userID === from) {
-          user.messages.push({
+        if(users[i].userID === from) {
+          users[i].messages.push({
             content,
             fromSelf: false,
           });
-
+          
           // them message vao selectedUser
 
-          if(user.userID !== selectedUser) {
-            user.hasNewMessages = true;
+          if(users[i].userID !== selectedUser) {
+            users[i].hasNewMessages = true;
           }
           break;
         }
       }
 
+      debugger;
+      
       this.setState({
         'users' : users,
       })
@@ -101,7 +102,7 @@ class App extends Component{
   onChatItemClicked(user) {
     return (event) => {
       this.setState({
-        'selectedUser': user
+        'selectedUser': user.userID
       })
     }
   }
@@ -117,23 +118,24 @@ class App extends Component{
   }
 
   onMessage(content) {
-    const { selectedUser } = this.state;
+    const { selectedUser, users } = this.state;
     if(selectedUser) {
       socket.emit('private message', {
         content,
-        to: selectedUser.userID,
+        to: selectedUser,
       });
-      this.setState({
-        'selectedUser': {
-          ...selectedUser,
-          messages: [
-            ...selectedUser.messages,
-            {
-              content,
-              fromSelf: true,
-            }
-          ]
+
+      for(let i=0; i <users.length; i++) {
+        if(users[i].userID === selectedUser) {
+          users[i].messages.push({
+            content,
+            fromSelf: true,
+          })
+          break;
         }
+      }
+      this.setState({
+        'users': users
       })
     }
   }
@@ -160,7 +162,7 @@ class App extends Component{
                       selectedUser={selectedUser} />
                   </div>
                 </div>
-                <MessArea selectedUser={selectedUser} onMessage={this.onMessage} />
+                <MessArea users={users} selectedUser={selectedUser} onMessage={this.onMessage} />
               </div>
               <p className="text-center top_spac"> Copyright by <a target="_blank" href="#">Le Quoc Dat</a></p>
             </div>

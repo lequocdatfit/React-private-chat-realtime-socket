@@ -31,6 +31,7 @@ io.on('connection', (socket) => {
     socket.emit('users', users);
 
     socket.on('private message', ({content, to}) => {
+        console.log('private message');
         socket.to(to).emit('private message', {
             content,
             from: socket.id,

@@ -33,13 +33,22 @@ class MessArea extends Component {
   }
 
   render() {
-    const { selectedUser, onMessage } = this.props;
+    const { users, selectedUser, onMessage } = this.props;
+    let matchedUser = null;
+    for(let i=0; i<users.length; i++) {
+      if(users[i].userID === selectedUser) {
+        matchedUser = users[i];
+        break;
+      }
+    }
+    console.log(matchedUser);
+
     return (
       <div className="MessArea">
         <div className="mesgs">
           <div className="msg_history">
             {
-              selectedUser.messages && selectedUser.messages.map((msg, index) => {
+              matchedUser && matchedUser.messages.map((msg, index) => {
                 if (!msg.fromSelf)
                   return (
                   <div key={index} className="incoming_msg">
@@ -72,7 +81,7 @@ class MessArea extends Component {
                 ref={this.inputElement} 
                 type="text" className="write_msg" placeholder="Type a message" />
               <button
-                onClick={()=> onMessage(this.inputElement.current.value)}
+                onClick={()=> onMessage(this.state.inputValue)}
                 className="msg_send_btn"
                 type="button">
                 <i className="fas fa-paper-plane"></i>
