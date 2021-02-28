@@ -19,6 +19,7 @@ class App extends Component{
       users.forEach((user) => {
         user.self = user.userID === socket.id;
         user.messages = [];
+        user.isShow = true;
       });
       // put current user on the top
       users.sort((a, b) => {
@@ -81,12 +82,14 @@ class App extends Component{
     this.onUsernameSelection = this.onUsernameSelection.bind(this);
     this.onChatItemClicked = this.onChatItemClicked.bind(this);
     this.onMessage = this.onMessage.bind(this);
+    this.onSearchingUser = this.onSearchingUser.bind(this);
   }
 
   initReactiveProperties(user) {
     user.connected = true;
     user.messages = [];
     user.hasNewMessages = false;
+    user.isShow = true;
   }
   
   onUsernameSelection(username) {
@@ -101,8 +104,15 @@ class App extends Component{
 
   onChatItemClicked(user) {
     return (event) => {
+      const users = this.state.users;
+      users.forEach((user) => {
+        if(user.userID === user.userID) {
+          user.hasNewMessages = false;
+        }
+      })
       this.setState({
-        'selectedUser': user.userID
+        'selectedUser': user.userID,
+        'users': users,
       })
     }
   }
@@ -140,6 +150,24 @@ class App extends Component{
     }
   }
 
+  onSearchingUser(text) {
+    const users = this.state.users;
+    const result = users.map((user) => {
+      if(user.username.toLowerCase().indexOf(text.toLowerCase()) !== -1) {
+        user.isShow = true;
+      } else {
+        user.isShow = false;
+      }
+      return user;
+    });
+
+    debugger;
+
+    this.setState({
+      'users': result,
+    })
+  }
+
   componentWillUnmount() {
     socket.off("connect_error");
   }
@@ -154,7 +182,7 @@ class App extends Component{
             <div className="messaging">
               <div className="inbox_msg">
                 <div className="inbox_people">
-                  <Heading />
+                  <Heading onSearchingUser = {this.onSearchingUser}/>
                   <div className="inbox_chat">
                     <ChatList 
                       onClick={this.onChatItemClicked}

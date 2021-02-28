@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import socket from '../socket';
 
 
 import ChatItem from './ChatItem'
@@ -8,7 +7,6 @@ import ChatItem from './ChatItem'
 class ChatList extends Component {
   constructor(props) {
     super(props);
-
   }
 
   render() {
@@ -17,6 +15,7 @@ class ChatList extends Component {
       <div className="ChatList">
         {
           users && users.map((user, index) => 
+          user.isShow && 
             <ChatItem 
               key={index} 
               user={user} 

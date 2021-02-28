@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import classnames from 'classnames';
+import PaperPlane from '../img/paper-plane.svg';
 
 
 class MessArea extends Component {
@@ -9,6 +10,19 @@ class MessArea extends Component {
       'inputValue' : ''
     }
     this.inputElement = React.createRef();
+    this.messagesScroll = React.createRef();
+  }
+
+  componentDidMount() {
+    this.scrollToBottom();
+  }
+
+  componentDidUpdate() {
+    this.scrollToBottom();
+  }
+
+  scrollToBottom() {
+    this.messagesScroll.current.scrollTo(0, this.messagesScroll.current.scrollHeight);
   }
 
 
@@ -32,8 +46,20 @@ class MessArea extends Component {
     }
   }
 
+  onSendMessageClick(event) {
+    let text = this.state.inputValue;
+    text = text.trim();
+    if(text !== '') {
+      this.setState({
+        'inputValue': ''
+      }, () => {
+        this.props.onMessage(text);
+      })
+    }
+  }
+
   render() {
-    const { users, selectedUser, onMessage } = this.props;
+    const { users, selectedUser } = this.props;
     let matchedUser = null;
     for(let i=0; i<users.length; i++) {
       if(users[i].userID === selectedUser) {
@@ -46,7 +72,7 @@ class MessArea extends Component {
     return (
       <div className="MessArea">
         <div className="mesgs">
-          <div className="msg_history">
+          <div className="msg_history" ref={this.messagesScroll}>
             {
               matchedUser && matchedUser.messages.map((msg, index) => {
                 if (!msg.fromSelf)
@@ -81,10 +107,10 @@ class MessArea extends Component {
                 ref={this.inputElement} 
                 type="text" className="write_msg" placeholder="Type a message" />
               <button
-                onClick={()=> onMessage(this.state.inputValue)}
+                onClick={(event)=> this.onSendMessageClick(event)}
                 className="msg_send_btn"
                 type="button">
-                <i className="fas fa-paper-plane"></i>
+                <img src={PaperPlane} />
               </button>
             </div>
           </div>
