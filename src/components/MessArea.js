@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import classnames from 'classnames';
 import PaperPlane from '../img/paper-plane.svg';
 
 
@@ -67,7 +66,6 @@ class MessArea extends Component {
         break;
       }
     }
-    console.log(matchedUser);
 
     return (
       <div className="MessArea">
@@ -110,7 +108,7 @@ class MessArea extends Component {
                 onClick={(event)=> this.onSendMessageClick(event)}
                 className="msg_send_btn"
                 type="button">
-                <img src={PaperPlane} />
+                <img src={PaperPlane} alt="paper-plane" />
               </button>
             </div>
           </div>

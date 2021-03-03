@@ -10,14 +10,34 @@ class App extends Component{
   constructor() {
     super();
     this.state = {
+      'yourSelf' : '',
       'usernameAlreadySelected' : false,
       'selectedUser' : '',
       'users': [],
     }
 
+    const sessionID = localStorage.getItem('sessionID');
+    if(sessionID) {
+      this.state.usernameAlreadySelected = true;
+      socket.auth = { sessionID };
+      socket.connect();
+    }
+
+    socket.on('session', ({sessionID, userID}) => {
+     socket.auth = { sessionID };
+     socket.userID =  userID;
+     localStorage.setItem('sessionID', sessionID);
+
+     
+    });
+
     socket.on('users', (users) => {
+      let yourSelf = null;
       users.forEach((user) => {
-        user.self = user.userID === socket.id;
+        user.self = user.userID === socket.userID;
+        if(user.self) {
+          yourSelf = user.userID;
+        }
         user.messages = [];
         user.isShow = true;
       });
@@ -36,44 +56,102 @@ class App extends Component{
       });
 
       const selectedUser = users[1] ? users[1].userID : null;
-
       this.setState({
-        'users': users.slice(1),
+        'yourSelf': yourSelf,
+        'users': users,
         'selectedUser': selectedUser,
       })
     });
 
     socket.on('user connected', (user) => {
       this.initReactiveProperties(user)
-
-      this.setState({
-        'users': [
-          ...this.state.users,
-          user,
-        ]
-      });
-    })
-
-    socket.on('private message', ({content, from}) => {
-      let { users, selectedUser } = this.state;
-      for(let i=0; i< users.length; i++) {
-        if(users[i].userID === from) {
-          users[i].messages.push({
-            content,
-            fromSelf: false,
-          });
-          
-          // them message vao selectedUser
-
-          if(users[i].userID !== selectedUser) {
-            users[i].hasNewMessages = true;
-          }
+      const { users } = this.state;
+      let isNewUserConnected = true;
+      for(let i=0; i<users.length; i++) {
+        if(users[i].userID === user.userID) {
+          isNewUserConnected = false;
           break;
         }
       }
+      if(isNewUserConnected) {
+        this.setState({
+          'users': [
+            ...this.state.users,
+            user,
+          ]
+        });
+      } 
+    })
 
-      debugger;
+    socket.on('private message', ({content, from, to}) => {
+      let { users, selectedUser, yourSelf } = this.state;
+      // messages from another tag
+      if(from === yourSelf && from !== to) {
+        for(let i=0; i<users.length; i++) {
+          if(users[i].userID === to) {
+            users[i].messages.push({
+              content,
+              fromSelf: true,
+            });
+          }
+        }
+      } else {
+        for(let i=0; i< users.length; i++) {
+          if(users[i].userID === from) {
+            users[i].messages.push({
+              content,
+              fromSelf: false,
+            });
+            
+            // them message vao selectedUser
+  
+            if(users[i].userID !== selectedUser) {
+              users[i].hasNewMessages = true;
+            }
+            break;
+          }
+        }
+      }
       
+      this.setState({
+        'users' : users,
+      })
+    })
+
+    socket.on("connect", () => {
+      const { users } = this.state; 
+      users.forEach((user) => {
+        if (user.self) {
+          user.connected = true;
+        }
+      });
+
+      this.setState({
+        'users': users,
+      })
+    });
+    
+    socket.on("disconnect", () => {
+      console.log('a user disconnected');
+      const { users } = this.state; 
+      users.forEach((user) => {
+        if (user.self) {
+          user.connected = false;
+        }
+      });
+      this.setState({
+        'users': users,
+      })
+    });
+
+    socket.on('user disconnected', (userID) => {
+      const { users } = this.state;
+      users.forEach((user) => {
+        if(user.userID === userID) {
+          user.connected = false;
+        }
+      });
+
       this.setState({
         'users' : users,
       })
@@ -105,9 +183,9 @@ class App extends Component{
   onChatItemClicked(user) {
     return (event) => {
       const users = this.state.users;
-      users.forEach((user) => {
-        if(user.userID === user.userID) {
-          user.hasNewMessages = false;
+      users.forEach((userItem) => {
+        if(userItem.userID === user.userID) {
+          userItem.hasNewMessages = false;
         }
       })
       this.setState({
@@ -192,7 +270,7 @@ class App extends Component{
                 </div>
                 <MessArea users={users} selectedUser={selectedUser} onMessage={this.onMessage} />
               </div>
-              <p className="text-center top_spac"> Copyright by <a target="_blank" href="#">Le Quoc Dat</a></p>
+              <p className="text-center top_spac"> Copyright by <a target="_blank" rel = "noreferrer" href="https://www.facebook.com/quocdatle.44/">Le Quoc Dat</a></p>
             </div>
           </div>
         </div>

@@ -1,10 +1,9 @@
 import React, { Component } from 'react'
 import classnames from 'classnames';
+import OnlineIcon from '../img/online.png'
 
 class ChatItem extends Component {
-  constructor(props) {
-    super(props);
-  }
+  
 
 
   render() {
@@ -18,7 +17,10 @@ class ChatItem extends Component {
               <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil" />
             </div>
             <div className="chat_ib">
-              <h5>{user.username}<span className="chat_date">Dec 25</span></h5>
+              <h5>{user.self ? user.username + ' (yourself)' : user.username}<span className="chat_date">Dec 25</span></h5>
+              {
+                user.connected && <img className="status-icon" src={OnlineIcon} alt='online' />
+              }
               {
                 lastMessage && lastMessage.fromSelf &&<p>You: { lastMessage.content }</p>
               }

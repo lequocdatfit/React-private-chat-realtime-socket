@@ -5,9 +5,6 @@ import ChatItem from './ChatItem'
 
 
 class ChatList extends Component {
-  constructor(props) {
-    super(props);
-  }
 
   render() {
     const { onClick, selectedUser, users } = this.props;
