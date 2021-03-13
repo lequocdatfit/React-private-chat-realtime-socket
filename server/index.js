@@ -13,20 +13,28 @@ const io = require('socket.io')(httpServer, {
 
 db.collection("users").get().then((querySnapshot) => {
     querySnapshot.forEach((doc) => {
-        console.log(`${doc.id} => ${doc.data()}`);
+        console.log(`${doc.id} => ${doc.data().username}`);
     });
 });
 
 
-io.use((socket, next) => {
+io.use(async (socket, next) => {
     const sessionID = socket.handshake.auth.sessionID;
+
     if(sessionID) {
-        const session = SessionStore.findSession(sessionID);
-        if(session) {
-            socket.sessionID = sessionID;
-            socket.userID = session.userID;
-            socket.username = session.username;
-            return next();
+        // const session = SessionStore.findSession(sessionID);
+        try {
+            const sessionDoc = await db.collection('users').doc(sessionID).get();
+
+            const session = sessionDoc.data();
+            if(session) {
+                socket.sessionID = sessionID;
+                socket.userID = session.userID;
+                socket.username = session.username;
+                return next();
+            }
+        } catch(err) {
+            console.error('Reading session error with:' + err);
         }
     }
 
@@ -44,15 +52,24 @@ io.use((socket, next) => {
     next();
 });
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
     console.log('a user connected');
 
     //save persist session
-    SessionStore.saveSession(socket.sessionID, {
+
+    db.collection('users').doc(socket.sessionID).set({
         userID: socket.userID,
         username: socket.username,
         connected: true,
+    }).catch(err => {
+        console.log("Adding data error: " + err);
     })
+
+    // SessionStore.saveSession(socket.sessionID, {
+    //     userID: socket.userID,
+    //     username: socket.username,
+    //     connected: true,
+    // })
 
     // emit session detail
     socket.emit('session', {
@@ -72,6 +89,9 @@ io.on('connection', (socket) => {
     //fetch existing users
     const users = [];
     const messagesPerUser = new Map();
+
+    //fetch all users from firebase
+
     messageStore.findMessagesForUser(socket.userID).forEach((message) => {
         console.log(message);
         const { from, to } = message;
@@ -82,16 +102,32 @@ io.on('connection', (socket) => {
             messagesPerUser.set(otherUser, [message]);
         }
     })
-    SessionStore.findAllSessions().forEach((session) => {
-        users.push({
-            userID: session.userID,
-            username: session.username,
-            connected: session.connected,
-            messages: messagesPerUser.get(session.userID) || [],
-        })
-    })
-    socket.emit('users', users);
 
+    try {
+        const usersDOC = await db.collection('users').get();
+        usersDOC.forEach(doc => {
+            let session = doc.data();
+            users.push({
+                userID: session.userID,
+                username: session.username,
+                connected: session.connected,
+                messages: messagesPerUser.get(session.userID) || [],
+            })
+        })
+
+        socket.emit('users', users);
+    } catch(err) {
+        console.error('fetch users error', err);
+    }
+
+    // SessionStore.findAllSessions().forEach((session) => {
+    //     users.push({
+    //         userID: session.userID,
+    //         username: session.username,
+    //         connected: session.connected,
+    //         messages: messagesPerUser.get(session.userID) || [],
+    //     })
+    // })
 
     // forward the private message to the right receipient (and to the other tab of sender)
     socket.on('private message', ({content, to}) => {
@@ -113,11 +149,19 @@ io.on('connection', (socket) => {
         const isDisconnected = MatchingSockets.size === 0;
         if(isDisconnected) {
             socket.broadcast.emit('user disconnected', socket.userID);
-            SessionStore.saveSession(socket.sessionID, {
+            // SessionStore.saveSession(socket.sessionID, {
+            //     userID: socket.userID,
+            //     username: socket.username,
+            //     connected: false,
+            // })
+
+            db.collection('users').doc(socket.sessionID).set({
                 userID: socket.userID,
                 username: socket.username,
                 connected: false,
-            })
+            }).catch(err => {
+                console.error("Update disconnect status fail: " +  err);
+            });
         }
     });
 
