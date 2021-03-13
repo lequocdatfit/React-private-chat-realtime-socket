@@ -38,8 +38,15 @@ class App extends Component{
         if(user.self) {
           yourSelf = user.userID;
         }
-        user.messages = [];
         user.isShow = true;
+
+        user.messages.forEach((message) => {
+          if(message.from === socket.userID) {
+            message.fromSelf = true;
+          } else {
+            message.fromSelf = false;
+          }
+        })
       });
       // put current user on the top
       users.sort((a, b) => {
@@ -85,7 +92,7 @@ class App extends Component{
 
     socket.on('private message', ({content, from, to}) => {
       let { users, selectedUser, yourSelf } = this.state;
-      // messages from another tag
+      // messages from another tab
       if(from === yourSelf && from !== to) {
         for(let i=0; i<users.length; i++) {
           if(users[i].userID === to) {

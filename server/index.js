@@ -1,7 +1,7 @@
 const db = require('./firebase.config');
 const SessionStore = require('./sessionStorage');
+const messageStore = require('./messageStore');
 const shortid = require('shortid');
-const sessionStore = require('./sessionStorage');
 const httpServer = require('http').createServer();
 const PORT = 3000;
 const io = require('socket.io')(httpServer, {
@@ -71,11 +71,23 @@ io.on('connection', (socket) => {
 
     //fetch existing users
     const users = [];
-    sessionStore.findAllSessions().forEach((session) => {
+    const messagesPerUser = new Map();
+    messageStore.findMessagesForUser(socket.userID).forEach((message) => {
+        console.log(message);
+        const { from, to } = message;
+        const otherUser = socket.userID === from ? to: from;
+        if (messagesPerUser.has(otherUser)) {
+            messagesPerUser.get(otherUser).push(message);
+        } else {
+            messagesPerUser.set(otherUser, [message]);
+        }
+    })
+    SessionStore.findAllSessions().forEach((session) => {
         users.push({
             userID: session.userID,
             username: session.username,
             connected: session.connected,
+            messages: messagesPerUser.get(session.userID) || [],
         })
     })
     socket.emit('users', users);
@@ -83,13 +95,16 @@ io.on('connection', (socket) => {
 
     // forward the private message to the right receipient (and to the other tab of sender)
     socket.on('private message', ({content, to}) => {
-        
-        socket.to(to).to(socket.userID).emit('private message', {
+        const message = {
             content,
             from: socket.userID,
             to,
-        })
-    })
+        }
+        socket.to(to).to(socket.userID).emit('private message', message);
+
+        messageStore.saveMessage(socket.userID, message);
+        messageStore.saveMessage(to, message);
+    });
 
 
     // notify users upon disconnected
