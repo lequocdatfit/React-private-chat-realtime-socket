@@ -6,42 +6,45 @@ import MessArea from './components/MessArea';
 import UsernameForm from './components/UsernameForm';
 import socket from './socket';
 
-class App extends Component{
+
+
+
+class App extends Component {
   constructor() {
     super();
     this.state = {
-      'yourSelf' : '',
-      'usernameAlreadySelected' : false,
-      'selectedUser' : '',
+      'yourSelf': '',
+      'usernameAlreadySelected': false,
+      'selectedUser': '',
       'users': [],
     }
 
     const sessionID = localStorage.getItem('sessionID');
-    if(sessionID) {
+    if (sessionID) {
       this.state.usernameAlreadySelected = true;
       socket.auth = { sessionID };
       socket.connect();
     }
 
-    socket.on('session', ({sessionID, userID}) => {
-     socket.auth = { sessionID };
-     socket.userID =  userID;
-     localStorage.setItem('sessionID', sessionID);
+    socket.on('session', ({ sessionID, userID }) => {
+      socket.auth = { sessionID };
+      socket.userID = userID;
+      localStorage.setItem('sessionID', sessionID);
 
-     
+
     });
 
     socket.on('users', (users) => {
       let yourSelf = null;
       users.forEach((user) => {
         user.self = user.userID === socket.userID;
-        if(user.self) {
+        if (user.self) {
           yourSelf = user.userID;
         }
         user.isShow = true;
 
         user.messages.forEach((message) => {
-          if(message.from === socket.userID) {
+          if (message.from === socket.userID) {
             message.fromSelf = true;
           } else {
             message.fromSelf = false;
@@ -74,28 +77,28 @@ class App extends Component{
       this.initReactiveProperties(user)
       const { users } = this.state;
       let isNewUserConnected = true;
-      for(let i=0; i<users.length; i++) {
-        if(users[i].userID === user.userID) {
+      for (let i = 0; i < users.length; i++) {
+        if (users[i].userID === user.userID) {
           isNewUserConnected = false;
           break;
         }
       }
-      if(isNewUserConnected) {
+      if (isNewUserConnected) {
         this.setState({
           'users': [
             ...this.state.users,
             user,
           ]
         });
-      } 
+      }
     })
 
-    socket.on('private message', ({content, from, to}) => {
+    socket.on('private message', ({ content, from, to }) => {
       let { users, selectedUser, yourSelf } = this.state;
       // messages from another tab
-      if(from === yourSelf && from !== to) {
-        for(let i=0; i<users.length; i++) {
-          if(users[i].userID === to) {
+      if (from === yourSelf && from !== to) {
+        for (let i = 0; i < users.length; i++) {
+          if (users[i].userID === to) {
             users[i].messages.push({
               content,
               fromSelf: true,
@@ -103,30 +106,30 @@ class App extends Component{
           }
         }
       } else {
-        for(let i=0; i< users.length; i++) {
-          if(users[i].userID === from) {
+        for (let i = 0; i < users.length; i++) {
+          if (users[i].userID === from) {
             users[i].messages.push({
               content,
               fromSelf: false,
             });
-            
+
             // them message vao selectedUser
-  
-            if(users[i].userID !== selectedUser) {
+
+            if (users[i].userID !== selectedUser) {
               users[i].hasNewMessages = true;
             }
             break;
           }
         }
       }
-      
+
       this.setState({
-        'users' : users,
+        'users': users,
       })
     })
 
     socket.on("connect", () => {
-      const { users } = this.state; 
+      const { users } = this.state;
       users.forEach((user) => {
         if (user.self) {
           user.connected = true;
@@ -137,10 +140,10 @@ class App extends Component{
         'users': users,
       })
     });
-    
+
     socket.on("disconnect", () => {
       console.log('a user disconnected');
-      const { users } = this.state; 
+      const { users } = this.state;
       users.forEach((user) => {
         if (user.self) {
           user.connected = false;
@@ -154,13 +157,13 @@ class App extends Component{
     socket.on('user disconnected', (userID) => {
       const { users } = this.state;
       users.forEach((user) => {
-        if(user.userID === userID) {
+        if (user.userID === userID) {
           user.connected = false;
         }
       });
 
       this.setState({
-        'users' : users,
+        'users': users,
       })
     })
 
@@ -176,12 +179,12 @@ class App extends Component{
     user.hasNewMessages = false;
     user.isShow = true;
   }
-  
+
   onUsernameSelection(username) {
     socket.auth = { username };
     socket.connect();
     this.setState({
-      'usernameAlreadySelected' : true,
+      'usernameAlreadySelected': true,
     }, () => {
       console.log(this.state);
     })
@@ -191,7 +194,7 @@ class App extends Component{
     return (event) => {
       const users = this.state.users;
       users.forEach((userItem) => {
-        if(userItem.userID === user.userID) {
+        if (userItem.userID === user.userID) {
           userItem.hasNewMessages = false;
         }
       })
@@ -204,9 +207,9 @@ class App extends Component{
 
   componentDidMount() {
     socket.on('connect_error', (err) => {
-      if(err.message === 'invalid username') {
+      if (err.message === 'invalid username') {
         this.setState({
-          'usernameAlreadySelected' : false
+          'usernameAlreadySelected': false
         })
       }
     })
@@ -214,14 +217,14 @@ class App extends Component{
 
   onMessage(content) {
     const { selectedUser, users } = this.state;
-    if(selectedUser) {
+    if (selectedUser) {
       socket.emit('private message', {
         content,
         to: selectedUser,
       });
 
-      for(let i=0; i <users.length; i++) {
-        if(users[i].userID === selectedUser) {
+      for (let i = 0; i < users.length; i++) {
+        if (users[i].userID === selectedUser) {
           users[i].messages.push({
             content,
             fromSelf: true,
@@ -238,7 +241,7 @@ class App extends Component{
   onSearchingUser(text) {
     const users = this.state.users;
     const result = users.map((user) => {
-      if(user.username.toLowerCase().indexOf(text.toLowerCase()) !== -1) {
+      if (user.username.toLowerCase().indexOf(text.toLowerCase()) !== -1) {
         user.isShow = true;
       } else {
         user.isShow = false;
@@ -256,20 +259,21 @@ class App extends Component{
   componentWillUnmount() {
     socket.off("connect_error");
   }
-
+  
   render() {
+    
     const { usernameAlreadySelected, selectedUser, users } = this.state;
-    if(usernameAlreadySelected) {
+    if (usernameAlreadySelected) {
       return (
         <div className="App">
           <div className="container">
-            <h3 className=" text-center">Messaging</h3>
+            <h3 className=" text-center">Chat everything</h3>
             <div className="messaging">
               <div className="inbox_msg">
                 <div className="inbox_people">
-                  <Heading onSearchingUser = {this.onSearchingUser}/>
+                  <Heading onSearchingUser={this.onSearchingUser} />
                   <div className="inbox_chat">
-                    <ChatList 
+                    <ChatList
                       onClick={this.onChatItemClicked}
                       users={users}
                       selectedUser={selectedUser} />
@@ -277,14 +281,14 @@ class App extends Component{
                 </div>
                 <MessArea users={users} selectedUser={selectedUser} onMessage={this.onMessage} />
               </div>
-              <p className="text-center top_spac"> Copyright by <a target="_blank" rel = "noreferrer" href="https://www.facebook.com/quocdatle.44/">Le Quoc Dat</a></p>
+              <p className="text-center top_spac"> Copyright by <a target="_blank" rel="noreferrer" href="https://www.facebook.com/quocdatle.44/">Le Quoc Dat</a></p>
             </div>
           </div>
         </div>
       );
     } else {
-      return(
-        <UsernameForm onSubmit={ this.onUsernameSelection }/>
+      return (
+        <UsernameForm onSubmit={this.onUsernameSelection} />
       )
     }
   }
